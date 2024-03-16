@@ -1,8 +1,15 @@
 #ifndef SYMULATOR_H
 #define SYMULATOR_H
 
-#include<iostream>
+#include <iostream>
+#include <vector>
 #include <string>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <string>
+#include <thread>
+#include <chrono>
 
 struct Sensor{
     int id;
@@ -20,8 +27,14 @@ struct Sensor{
 
 class Symulator {
     private:
+        // Variables
+        int simulatorSocket;
         int randomValue;
         Sensor sensor;
+
+        // Methods
+        int randomizeValue();
+        int createSocket();
 
     public:
         // Constructor and Destructor
@@ -30,8 +43,7 @@ class Symulator {
 
         // Methods
         void simulate();
-        int randomizeValue();
-        std::string transmit();
+        void transmit();
 };
 
 #endif

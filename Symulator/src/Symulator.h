@@ -14,6 +14,7 @@
 struct Sensor{
     int id;
     std::string type;
+    std::string encoderType;
     int frequency;
     std::string quality;
     int minValue;
@@ -22,23 +23,25 @@ struct Sensor{
 
     // Constructor
     Sensor() {}
-    Sensor(int min, int max, int freq, std::string type) : minValue(min), maxValue(max), frequency(freq), type(type) {}
+    Sensor(int id, std::string type, int min, int max, std::string eT, int freq) :
+           id(id), type(type), minValue(min), maxValue(max), encoderType(eT), frequency(freq) {}
 };
 
 class Symulator {
     private:
         // Variables
-        int simulatorSocket;
+        std::vector<int> ports;
+        std::vector<int> simulatorSockets;
         int randomValue;
         Sensor sensor;
 
         // Methods
         int randomizeValue();
-        int createSocket();
+        void createSockets();
 
     public:
         // Constructor and Destructor
-        Symulator(Sensor sensor);
+        Symulator(Sensor sensor, std::vector<int> ports);
         ~Symulator();
 
         // Methods

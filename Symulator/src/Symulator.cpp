@@ -2,45 +2,53 @@
 #include "Classifier.h"
 
 // Constructors and Destructors
-Symulator::Symulator(Sensor sensor){
+Symulator::Symulator(Sensor sensor, std::vector<int> ports){
+
     //Initialize symulator
     this->sensor = sensor;
+    this->ports = ports;
     this->randomValue = 0;
-    this->simulatorSocket = this->createSocket();
+
+    //Create sockets
+    this->createSockets();
 }
 
 Symulator::~Symulator() {
     //Destructor
-    close(this->simulatorSocket);
+    for(auto& socket : this->simulatorSockets){
+        close(socket);
+    }
 }
 
 // Methods
-int Symulator::createSocket() {
+void Symulator::createSockets() {
     /*
         @ return int
         Create a socket
     */
-    // Create a socket
-    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if(clientSocket < 0){
-        std::cerr << "Error creating socket" << std::endl;
-        return 1;
+
+   for(auto& port : this->ports){
+        // Create a socket
+        int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+        if(clientSocket < 0){
+            std::cerr << "Error creating socket" << std::endl;
+            exit(1);
+        }
+        
+        // Configure the server address
+        struct sockaddr_in serverAddr;
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_port = htons(port);
+        serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+        // Connect to the server
+        if(connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
+            std::cerr << "Error connecting to server on port " << port << std::endl;
+            exit(1);
+        }
+
+        this->simulatorSockets.push_back(clientSocket);
     }
-
-    // Configure the server address
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(55555);
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-
-    // Connect to the server
-    if(connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
-        std::cerr << "Error connecting to server" << std::endl;
-        return 1;
-    }
-
-    return clientSocket;
 }
 
 void Symulator::simulate() {
@@ -77,11 +85,26 @@ void Symulator::transmit() {
         Transmit the value of the sensor - print it to the console
     */
 
-    //Classify the value
-    this->sensor.quality = Classifier::classify(this->sensor.maxValue, this->sensor.minValue, this->randomValue);
+    std::vector<std::thread> threads;
 
-    std::string message = "$FIX," + std::to_string(this->sensor.id) + "," + this->sensor.type + "," + std::to_string(this->randomValue) + "," + this->sensor.quality;
-    
-    std::cout<<message<<std::endl;
-    send(this->simulatorSocket, message.c_str(), message.size() + 1, 0);
+    for(int idx = 0; idx < this->ports.size(); idx++){
+        std::cout << "Transmitting to port: " << this->ports[idx] << std::endl;
+
+        threads.emplace_back([this, idx](){
+            //Simulate the sensor
+            this->simulate();
+            
+            //Classify the value
+            this->sensor.quality = Classifier::classify(this->sensor.maxValue, this->sensor.minValue, this->randomValue);
+
+            std::string message = "$FIX," + std::to_string(this->sensor.id) + "," + this->sensor.type + "," + std::to_string(this->randomValue) + "," + this->sensor.quality;
+            
+            std::cout<<message<<std::endl;
+            send(this->simulatorSockets[idx], message.c_str(), message.size() + 1, 0); 
+        });
+    }
+
+    for(auto &t : threads){
+        t.join();
+    }
 }

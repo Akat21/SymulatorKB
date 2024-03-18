@@ -1,0 +1,31 @@
+{
+  "Sensors": [
+    {
+      "ID": 1,
+      "Type": "speed",
+      "MinValue": -10,
+      "MaxValue": 100,
+      "EncoderType": "fixed",
+      "Frequency": 6,
+      "Port": [55555, 55558, 55559]
+    },
+    {
+      "ID": 2,
+      "Type": "position",
+      "MinValue": -10000,
+      "MaxValue": 10000,
+      "EncoderType": "fixed",
+      "Frequency": 3,
+      "Port": [55556]
+    },
+    {
+      "ID": 3,
+      "Type": "depth",
+      "MinValue": 0,
+      "MaxValue": 255,
+      "EncoderType": "fixed",
+      "Frequency": 10,
+      "Port": [55557]
+    }
+  ]
+}

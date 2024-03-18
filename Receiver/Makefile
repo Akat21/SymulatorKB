@@ -1,10 +1,10 @@
 all: compile link clean
 
 compile:
-	g++ -c src/main.cpp
+	g++ -c src/Receiver.cpp src/main.cpp
 
 link:
-	g++ main.o -o main
+	g++ Receiver.o main.o -o main
 
 clean:
 	rm -f *.o

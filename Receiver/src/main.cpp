@@ -1,68 +1,52 @@
-#include <iostream>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
+#include "Receiver.h"
+#include "json.hpp"
+
+#include <vector>
+#include <fstream>
+
+std::vector<Receiver*> createReceiver(std::ifstream& file) {
+    /*
+        @ return std::vector<Simulator>
+        Creates the simulators
+    */
+
+    std::vector<Receiver*> receivers;
+    nlohmann::json json;
+    file >> json;
+
+    for(auto& receiver : json["Receivers"]){
+        receivers.push_back(new Receiver(receiver["ID"], receiver["Port"], receiver["Active"]));
+    }
+
+    return receivers;
+}
 
 int main(){
-    // Create a socket
-    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if(serverSocket < 0){
-        std::cerr << "Error creating socket" << std::endl;
+    // Read the sensor configuration
+    std::ifstream file("receiverConfig.json");
+    if(!file.is_open()){
+        std::cerr << "Error opening sensorConfig.json" << std::endl;
         return 1;
     }
 
-    // Configure the server address
-    struct sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(55555);
-    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    // Create the receivers
+    std::vector<Receiver*> receivers = createReceiver(file);
 
-    // Bind the socket to the server address
-    if(bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
-        std::cerr << "Error binding socket to server address" << std::endl;
-        return 1;
+    // Create the threads
+    std::vector<std::thread> threads;
+    
+    // Start the receivers
+    for(auto& receiver : receivers){
+        threads.emplace_back([&receiver](){
+            // Receive the message
+            receiver->receive();
+        });
     }
 
-    // Listen for connections
-    if(listen(serverSocket, 1) < 0){
-        std::cerr << "Error listening for connections" << std::endl;
-        return 1;
+    // Join the threads
+    for(auto &t : threads){
+        t.join();
     }
-
-    std::cout << "Server is listening for connections" << std::endl;
-
-    // Accept a connection
-    struct sockaddr_in clientAddr;
-    socklen_t clientAddrSize = sizeof(clientAddr);
-    int clientSocket = accept(serverSocket, (struct sockaddr*)&clientAddr, &clientAddrSize);
-    if(clientSocket < 0){
-        std::cerr << "Error accepting connection" << std::endl;
-        return 1;
-    }
-
-    std::cout << "Client connected" << std::endl;
-
-    // Receive a message from the client
-    std::string message;
-    char buffer[1024];
-    while(true){
-        int bytesReceived = recv(clientSocket, buffer, 1024, 0);
-        if(bytesReceived < 0){
-            std::cerr << "Error receiving message from client" << std::endl;
-            return 1;
-        }
-        if(bytesReceived == 0){
-            std::cout << "Client disconnected" << std::endl;
-            break;
-        }
-        message.append(buffer, bytesReceived);
-        std::cout << "Client says: " << message << std::endl;
-    }
-
-
-    // Close the socket
-    close(serverSocket);
-    close(clientSocket);
 
     return 0;
 }

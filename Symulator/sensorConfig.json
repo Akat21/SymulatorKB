@@ -6,7 +6,7 @@
       "MinValue": -10,
       "MaxValue": 100,
       "EncoderType": "fixed",
-      "Frequency": 6,
+      "Frequency": 2,
       "Port": [55555, 55558, 55559]
     },
     {
@@ -15,7 +15,7 @@
       "MinValue": -10000,
       "MaxValue": 10000,
       "EncoderType": "fixed",
-      "Frequency": 3,
+      "Frequency": 1,
       "Port": [55556]
     },
     {
@@ -24,7 +24,7 @@
       "MinValue": 0,
       "MaxValue": 255,
       "EncoderType": "fixed",
-      "Frequency": 10,
+      "Frequency": 3,
       "Port": [55557]
     }
   ]

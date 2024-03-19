@@ -32,7 +32,6 @@ void Symulator::createSockets() {
         int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
         if(clientSocket < 0){
             std::cerr << "Error creating socket" << std::endl;
-            exit(1);
         }
         
         // Configure the server address
@@ -43,8 +42,8 @@ void Symulator::createSockets() {
 
         // Connect to the server
         if(connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0){
-            std::cerr << "Error connecting to server on port " << port << std::endl;
-            exit(1);
+            std::cerr << "Receiver on port " << port << " inactive" << std::endl;
+            continue;
         }
 
         this->simulatorSockets.push_back(clientSocket);
@@ -60,7 +59,12 @@ void Symulator::simulate() {
     //Generate a random value
     this->randomValue = this->randomizeValue();
 
-    std::this_thread::sleep_for(std::chrono::seconds(this->sensor.frequency));
+    // Frequency in Hz
+    double frequency = static_cast<double>(this->sensor.frequency);
+    std::chrono::milliseconds sleepDuration(static_cast<int>(1000.0 / frequency));
+
+    //Sleep for the duration
+    std::this_thread::sleep_for(sleepDuration);
 }
 
 int Symulator::randomizeValue(){
@@ -88,8 +92,6 @@ void Symulator::transmit() {
     std::vector<std::thread> threads;
 
     for(int idx = 0; idx < this->ports.size(); idx++){
-        std::cout << "Transmitting to port: " << this->ports[idx] << std::endl;
-
         threads.emplace_back([this, idx](){
             //Simulate the sensor
             this->simulate();
@@ -99,7 +101,6 @@ void Symulator::transmit() {
 
             std::string message = "$FIX," + std::to_string(this->sensor.id) + "," + this->sensor.type + "," + std::to_string(this->randomValue) + "," + this->sensor.quality;
             
-            std::cout<<message<<std::endl;
             send(this->simulatorSockets[idx], message.c_str(), message.size() + 1, 0); 
         });
     }

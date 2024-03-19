@@ -1,15 +1,24 @@
 #include "Symulator.h"
+#include "Receiver.h"
 #include <nlohmann/json.hpp>
 
 #include <fstream>
-#include <atomic>
-#include <csignal>
 
-//sudo apt-get install nlohmann-json3-dev
-std::atomic<bool> running(true);
+std::vector<Receiver*> createReceiver(std::ifstream& file) {
+    /*
+        @ return std::vector<Simulator>
+        Creates the simulators
+    */
 
-void signalHandler(int signum){
-    running = false;
+    std::vector<Receiver*> receivers;
+    nlohmann::json json;
+    file >> json;
+
+    for(auto& receiver : json["Receivers"]){
+        receivers.push_back(new Receiver(receiver["ID"], receiver["Port"], receiver["Active"]));
+    }
+
+    return receivers;
 }
 
 std::vector<Symulator*> createSimulators(std::ifstream& file) {
@@ -36,33 +45,66 @@ std::vector<Symulator*> createSimulators(std::ifstream& file) {
 }
 
 int main(){
-    std::signal(SIGINT, signalHandler);
 
-    // Read the sensor configuration
-    std::ifstream file("sensorConfig.json");
-    if(!file.is_open()){
+    // ***************************Receiver*************************** //
+
+
+    
+    // Read the sensor configuration for the receivers
+    std::ifstream file1("receiverConfig.json");
+    if(!file1.is_open()){
+        std::cerr << "Error opening sensorConfig.json" << std::endl;
+        return 1;
+    }
+
+    // Create the receivers
+    std::vector<Receiver*> receivers = createReceiver(file1);
+
+    // Create the threads for the receivers
+    std::vector<std::thread> receiversThreads;
+    
+    // Start the receivers
+    for(auto& receiver : receivers){
+        receiversThreads.emplace_back([&receiver](){
+            // Listen for messages
+            receiver->receive();
+        });
+    }
+
+
+    // ***************************Symulator*************************** //
+
+
+    // Read the sensor configuration for the simulators
+    std::ifstream file2("sensorConfig.json");
+    if(!file2.is_open()){
         std::cerr << "Error opening sensorConfig.json" << std::endl;
         return 1;
     }
 
     // Create the simulators
-    std::vector<Symulator*> symulators = createSimulators(file);
+    std::vector<Symulator*> symulators = createSimulators(file2);
 
-    // Create the threads
-    std::vector<std::thread> threads;
+    // Create the threads for the simulators
+    std::vector<std::thread> symulatorsThreads;
 
     // Start the simulators
     for(auto& symulator : symulators){
-        threads.emplace_back([&symulator](){
-            while(running.load()){
-                // Transmit the message
+        symulatorsThreads.emplace_back([&symulator](){
+            while(true){
+                // Transmit the message to the receivers
                 symulator->transmit();
             }
         });
     }
 
-    // Join the threads
-    for(auto &t : threads){
+    // Join the threads for the simulators
+    for(auto &t : symulatorsThreads){
+        t.join();
+    }
+
+    // Join the threads for the receivers
+    for(auto &t : receiversThreads){
         t.join();
     }
 }

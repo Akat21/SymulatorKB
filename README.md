@@ -19,7 +19,7 @@ Po treści zadania nie mogłem jednoznacznie wywnioskować czy program ma dział
 3. Upewnij się, że pliki konfiguracyjne `receiverConfig.json` i `sensorConfig.json` są dostępne i poprawnie skonfigurowane.
 4. Uruchom program, wykonując plik wykonywalny.
 
-Opcjonalnie jakby jakimś cudem były problemy, dołączyłem plik main.exe, który można po prostu odpalić i program powinien działać.
+Opcjonalnie jakby jakimś cudem były problemy, dołączyłem plik main.exe, który można po prostu odpalić i program powinien również działać poprawnie.
 
 ## Autorzy
 
